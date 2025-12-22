@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>核醫檢查 CDS - 建議活度計算</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 0;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+        .label {
+            font-weight: bold;
+            color: #555;
+            display: inline-block;
+            min-width: 120px;
+        }
+        .error {
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .warning {
+            color: #856404;
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .btn-success {
+            background-color: #27ae60;
+        }
+        .btn-success:hover {
+            background-color: #229954;
+        }
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .recommendation-box {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .recommendation-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2e7d32;
+            margin: 10px 0;
+        }
+        .clamp-reason {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .clamp-min {
+            background: #ffeb3b;
+            color: #f57f17;
+        }
+        .clamp-max {
+            background: #ff9800;
+            color: #e65100;
+        }
+        .clamp-none {
+            background: #4caf50;
+            color: white;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        .hidden {
+            display: none;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>🏥 核醫檢查 CDS Service</h1>
+    <p style="color: #666;">North American Consensus Guidelines 2024</p>
+
+    {% if error %}
+    <div class="error">
+        <strong>錯誤：</strong>{{ error }}
+    </div>
+    {% endif %}
+
+    {% if patient_info %}
+    <div class="card">
+        <h2>病人資訊</h2>
+        <p><span class="label">姓名：</span>{{ patient_info.name }}</p>
+        <p><span class="label">性別：</span>{{ patient_info.gender }}</p>
+        <p><span class="label">ID：</span>{{ patient_info.id }}</p>
+        {% if patient_info.birthDate %}
+        <p><span class="label">生日：</span>{{ patient_info.birthDate }}</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if weight_info %}
+    <div class="card">
+        <h2>體重資訊</h2>
+        <p><span class="label">體重：</span>{{ weight_info.value }} {{ weight_info.unit }}</p>
+        {% if weight_info.date %}
+        <p><span class="label">測量日期：</span>{{ weight_info.date }}</p>
+        {% endif %}
+        <button class="btn" onclick="showWeightInput()" style="margin-top: 10px;">更新體重</button>
+    </div>
+    {% else %}
+    <div class="card">
+        <h2>體重資訊</h2>
+        <p class="warning">⚠️ 未找到體重資料（LOINC 29463-7）</p>
+        <p>請輸入病人體重以計算建議活度：</p>
+        <div id="weight-input-form" style="margin-top: 15px;">
+            <div class="form-group">
+                <label>體重（kg）：</label>
+                <input type="number" id="weight-value" step="0.1" min="0" placeholder="例如：25.0" required>
+            </div>
+            <div class="form-group">
+                <label>測量日期：</label>
+                <input type="datetime-local" id="weight-date" value="{{ current_datetime }}" required>
+            </div>
+            <button class="btn btn-success" onclick="submitWeight()">提交體重資料</button>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- 體重輸入表單（隱藏，用於更新現有體重） -->
+    <div id="weight-update-form" class="card hidden">
+        <h2>更新體重資訊</h2>
+        <div class="form-group">
+            <label>體重（kg）：</label>
+            <input type="number" id="weight-update-value" step="0.1" min="0" placeholder="例如：25.0" required>
+        </div>
+        <div class="form-group">
+            <label>測量日期：</label>
+            <input type="datetime-local" id="weight-update-date" required>
+        </div>
+        <button class="btn btn-success" onclick="submitWeightUpdate()">提交更新</button>
+        <button class="btn" onclick="hideWeightInput()" style="margin-left: 10px;">取消</button>
+    </div>
+
+    {% if service_requests %}
+    <div class="card">
+        <h2>檢查醫令 (ServiceRequest)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>狀態</th>
+                    <th>日期</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sr in service_requests %}
+                <tr>
+                    <td>
+                        {% if sr.code and sr.code.coding %}
+                            {{ sr.code.coding[0].code }} - {{ sr.code.coding[0].display or sr.code.text or '' }}
+                        {% else %}
+                            {{ sr.code.text or 'N/A' }}
+                        {% endif %}
+                    </td>
+                    <td>{{ sr.status }}</td>
+                    <td>{{ sr.authoredOn or sr.meta.lastUpdated or 'N/A' }}</td>
+                    <td>
+                        <button class="btn" onclick="calculateDose('{{ sr.id }}', '{{ patient_info.id }}')">
+                            計算建議活度
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="card">
+        <h2>檢查醫令</h2>
+        <p>目前沒有活躍的 ServiceRequest</p>
+    </div>
+    {% endif %}
+
+    <div id="recommendation-section" class="card hidden">
+        <h2>建議活度計算結果</h2>
+        <div id="recommendation-content"></div>
+    </div>
+
+    <div class="card">
+        <a href="/logout" class="btn btn-danger">登出</a>
+    </div>
+
+    <script>
+        const FHIR_BASE = '{{ fhir_base }}';
+        const PATIENT_ID = '{{ patient_info.id if patient_info else "" }}';
+        const WEIGHT_KG = {{ weight_info.value if weight_info else 0 }};
+        
+        // 設定當前日期時間為預設值
+        document.addEventListener('DOMContentLoaded', function() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const datetimeLocal = `${year}-${month}-${day}T${hours}:${minutes}`;
+            
+            const weightDateInput = document.getElementById('weight-date');
+            if (weightDateInput && !weightDateInput.value) {
+                weightDateInput.value = datetimeLocal;
+            }
+            
+            const weightUpdateDateInput = document.getElementById('weight-update-date');
+            if (weightUpdateDateInput && !weightUpdateDateInput.value) {
+                weightUpdateDateInput.value = datetimeLocal;
+            }
+        });
+        
+        function showWeightInput() {
+            const updateForm = document.getElementById('weight-update-form');
+            if (updateForm) {
+                updateForm.classList.remove('hidden');
+                const currentWeight = WEIGHT_KG || 0;
+                const weightInput = document.getElementById('weight-update-value');
+                if (weightInput) {
+                    weightInput.value = currentWeight;
+                }
+            }
+        }
+        
+        function hideWeightInput() {
+            const updateForm = document.getElementById('weight-update-form');
+            if (updateForm) {
+                updateForm.classList.add('hidden');
+            }
+        }
+        
+        async function submitWeight() {
+            const weightValue = parseFloat(document.getElementById('weight-value').value);
+            const weightDate = document.getElementById('weight-date').value;
+            
+            if (!weightValue || weightValue <= 0) {
+                alert('請輸入有效的體重值');
+                return;
+            }
+            
+            if (!weightDate) {
+                alert('請選擇測量日期');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/fhir/Observation/create-weight', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        patientId: PATIENT_ID,
+                        weightKg: weightValue,
+                        effectiveDateTime: weightDate
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    let errorMsg = `HTTP ${response.status}`;
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        errorMsg = errorJson.error || errorMsg;
+                    } catch (e) {
+                        errorMsg = errorText.substring(0, 200);
+                    }
+                    throw new Error(errorMsg);
+                }
+                
+                const data = await response.json();
+                console.log('Weight submission response:', data);
+                
+                if (data.ok) {
+                    const obsId = data.id || 'unknown';
+                    const submittedWeight = data.weightKg || weightValue;
+                    alert(`體重資料已成功提交！\nObservation ID: ${obsId}\n體重: ${submittedWeight} kg\n\n頁面將重新載入以顯示最新資料...`);
+                    console.log('Weight submitted successfully, reloading page in 2 seconds...');
+                    // 等待更長時間讓 FHIR server 完全處理和索引更新
+                    setTimeout(() => {
+                        // 強制重新載入（不使用快取，並加上時間戳避免快取）
+                        window.location.href = window.location.pathname + '?t=' + Date.now();
+                    }, 2000);
+                } else {
+                    const errorMsg = data.error || '未知錯誤';
+                    alert('提交失敗：' + errorMsg + '\n\n請檢查：\n1. 是否已重新進行 SMART 授權（需要 Observation.write 權限）\n2. FHIR 伺服器是否正常運行\n3. 查看瀏覽器控制台（F12）和後端日誌');
+                    console.error('Weight submission error:', data);
+                }
+            } catch (error) {
+                console.error('提交體重錯誤:', error);
+                alert('發生錯誤：' + error.message);
+            }
+        }
+        
+        async function submitWeightUpdate() {
+            const weightValue = parseFloat(document.getElementById('weight-update-value').value);
+            const weightDate = document.getElementById('weight-update-date').value;
+            
+            if (!weightValue || weightValue <= 0) {
+                alert('請輸入有效的體重值');
+                return;
+            }
+            
+            if (!weightDate) {
+                alert('請選擇測量日期');
+                return;
+            }
+            
+            console.log('Submitting weight update:', { weightValue, weightDate, patientId: PATIENT_ID });
+            
+            try {
+                const response = await fetch('/fhir/Observation/create-weight', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        patientId: PATIENT_ID,
+                        weightKg: weightValue,
+                        effectiveDateTime: weightDate
+                    })
+                });
+                
+                console.log('Weight update response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    let errorMsg = `HTTP ${response.status}`;
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        errorMsg = errorJson.error || errorMsg;
+                    } catch (e) {
+                        errorMsg = errorText.substring(0, 200);
+                    }
+                    throw new Error(errorMsg);
+                }
+                
+                const data = await response.json();
+                console.log('Weight update response:', data);
+                
+                if (data.ok) {
+                    const obsId = data.id || 'unknown';
+                    const submittedWeight = data.weightKg || weightValue;
+                    alert(`體重資料已成功更新！\nObservation ID: ${obsId}\n體重: ${submittedWeight} kg\n\n頁面將重新載入以顯示最新資料...`);
+                    // 等待更長時間讓 FHIR server 完全處理和索引更新
+                    setTimeout(() => {
+                        // 強制重新載入（不使用快取，並加上時間戳避免快取）
+                        window.location.href = window.location.pathname + '?t=' + Date.now();
+                    }, 2000);
+                } else {
+                    const errorMsg = data.error || '未知錯誤';
+                    alert('更新失敗：' + errorMsg + '\n\n請檢查：\n1. 是否已重新進行 SMART 授權（需要 Observation.write 權限）\n2. FHIR 伺服器是否正常運行\n3. 查看瀏覽器控制台和後端日誌');
+                    console.error('Weight update error:', data);
+                }
+            } catch (error) {
+                console.error('更新體重錯誤:', error);
+                alert('發生錯誤：' + error.message);
+            }
+        }
+        
+        async function submitWeightUpdate_OLD() {
+            const weightValue = parseFloat(document.getElementById('weight-update-value').value);
+            const weightDate = document.getElementById('weight-update-date').value;
+            
+            if (!weightValue || weightValue <= 0) {
+                alert('請輸入有效的體重值');
+                return;
+            }
+            
+            if (!weightDate) {
+                alert('請選擇測量日期');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/fhir/Observation/create-weight', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        patientId: PATIENT_ID,
+                        weightKg: weightValue,
+                        effectiveDateTime: weightDate
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    let errorMsg = `HTTP ${response.status}`;
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        errorMsg = errorJson.error || errorMsg;
+                    } catch (e) {
+                        errorMsg = errorText.substring(0, 200);
+                    }
+                    throw new Error(errorMsg);
+                }
+                
+                const data = await response.json();
+                if (data.ok) {
+                    alert('體重資料已成功更新！');
+                    location.reload(); // 重新載入頁面以顯示新資料
+                } else {
+                    alert('更新失敗：' + (data.error || '未知錯誤'));
+                }
+            } catch (error) {
+                console.error('更新體重錯誤:', error);
+                alert('發生錯誤：' + error.message);
+            }
+        }
+
+        async function calculateDose(serviceRequestId, patientId) {
+            const section = document.getElementById('recommendation-section');
+            const content = document.getElementById('recommendation-content');
+            
+            section.classList.remove('hidden');
+            content.innerHTML = '<div class="loading">計算中...</div>';
+
+            try {
+                const protocol = {
+                    mag3_with_flow: false,
+                    fdg_region: 'body',
+                    fdg_strategy: 'low'
+                };
+
+                const response = await fetch('/cds/nm-dose/recommend', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',  // 包含 cookies (session_id)
+                    body: JSON.stringify({
+                        patientId: patientId,
+                        serviceRequestId: serviceRequestId,
+                        protocol: protocol
+                    })
+                });
+
+                // 檢查回應狀態
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 200)}`);
+                }
+
+                const data = await response.json();
+
+                if (data.status === 'ok' && data.recommendation) {
+                    const rec = data.recommendation;
+                    const clampClass = rec.clampReason === 'min' ? 'clamp-min' : 
+                                     rec.clampReason === 'max' ? 'clamp-max' : 'clamp-none';
+                    const clampText = rec.clampReason === 'min' ? '已達最小值' :
+                                     rec.clampReason === 'max' ? '已達最大值' : '正常範圍';
+
+                    // 取得使用的體重資訊
+                    const weightInfo = data.inputs && data.inputs.weightInfo ? data.inputs.weightInfo : null;
+                    const weightDisplay = weightInfo ? 
+                        `${weightInfo.value} ${weightInfo.unit}${weightInfo.date ? ` (測量日期: ${new Date(weightInfo.date).toLocaleString('zh-TW')})` : ''}` : 
+                        (data.inputs && data.inputs.weightKg ? `${data.inputs.weightKg} kg` : '未知');
+                    
+                    let html = `
+                        <div class="recommendation-box">
+                            <h3>建議活度</h3>
+                            <div class="recommendation-value">
+                                ${rec.recommendedMBq} MBq
+                                <span class="clamp-reason ${clampClass}">${clampText}</span>
+                            </div>
+                            <p><strong>核醫藥物：</strong>${data.radiopharmaceutical.display}</p>
+                            <p><strong>檢查類型：</strong>${data.studyType}</p>
+                            <p><strong>使用的體重：</strong><span style="color: #1976D2; font-weight: bold;">${weightDisplay}</span></p>
+                            <p><strong>計算值：</strong>${rec.rawCalculatedMBq} MBq</p>
+                            <p><strong>範圍：</strong>${rec.minMBq} - ${rec.maxMBq} MBq</p>
+                            ${rec.ruleMBqPerKg ? `<p><strong>規則：</strong>${rec.ruleMBqPerKg} MBq/kg</p>` : ''}
+                            ${rec.ruleMBqPerKgRange ? `<p><strong>規則範圍：</strong>${rec.ruleMBqPerKgRange[0]} - ${rec.ruleMBqPerKgRange[1]} MBq/kg</p>` : ''}
+                        </div>
+                    `;
+                    
+                    // 加入考量因素
+                    if (data.inputs && data.inputs.considerations && data.inputs.considerations.length > 0) {
+                        html += `
+                            <div style="margin-top: 20px; padding: 15px; background: #f0f7ff; border-left: 4px solid #2196F3; border-radius: 4px;">
+                                <h4 style="margin-top: 0; color: #1976D2;">📋 建議紀錄的考量因素</h4>
+                                <ul style="margin: 10px 0; padding-left: 20px;">
+                        `;
+                        data.inputs.considerations.forEach(consideration => {
+                            html += `<li style="margin: 5px 0;">${consideration}</li>`;
+                        });
+                        html += `</ul></div>`;
+                    }
+                    
+                    // 加入文獻資料
+                    if (data.inputs && data.inputs.references && data.inputs.references.length > 0) {
+                        html += `
+                            <div style="margin-top: 15px; padding: 15px; background: #fff9e6; border-left: 4px solid #FFC107; border-radius: 4px;">
+                                <h4 style="margin-top: 0; color: #F57C00;">📚 相關文獻資料</h4>
+                                <ul style="margin: 10px 0; padding-left: 20px;">
+                        `;
+                        data.inputs.references.forEach(reference => {
+                            html += `<li style="margin: 5px 0; font-size: 0.9em;">${reference}</li>`;
+                        });
+                        html += `</ul>`;
+                        
+                        // 加入指南資訊
+                        if (data.inputs.guideline) {
+                            const guideline = data.inputs.guideline;
+                            html += `
+                                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd;">
+                                    <p style="margin: 5px 0;"><strong>指南：</strong>${guideline.name || ''}</p>
+                                    ${guideline.url ? `<p style="margin: 5px 0; font-size: 0.9em;"><a href="${guideline.url}" target="_blank" style="color: #1976D2;">${guideline.url}</a></p>` : ''}
+                                </div>
+                            `;
+                        }
+                        html += `</div>`;
+                    }
+
+                    if (data.warnings && data.warnings.length > 0) {
+                        html += '<div class="warning"><strong>警告：</strong><ul>';
+                        data.warnings.forEach(w => {
+                            html += `<li>${w}</li>`;
+                        });
+                        html += '</ul></div>';
+                    }
+
+                    html += `
+                        <div class="form-group">
+                            <label>覆寫活度（MBq，可選）：</label>
+                            <input type="text" id="override-mbq" pattern="[0-9]+(\.[0-9]+)?" placeholder="${rec.recommendedMBq}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+                        <div class="form-group">
+                            <label>覆寫理由（可選）：</label>
+                            <textarea id="override-reason" placeholder="例如：臨床考量、特殊情況等"></textarea>
+                        </div>
+                        <button class="btn btn-success" onclick="createMedicationRequest('${serviceRequestId}', '${patientId}', '${data.radiopharmaceutical.code}', '${data.radiopharmaceutical.display}', ${rec.recommendedMBq})">
+                            建立 MedicationRequest
+                        </button>
+                    `;
+
+                    content.innerHTML = html;
+                } else {
+                    content.innerHTML = `
+                        <div class="error">
+                            <strong>無法計算建議活度</strong>
+                            <p>狀態：${data.status}</p>
+                            <p>訊息：${data.message || '未知錯誤'}</p>
+                            ${data.missing && data.missing.length > 0 ? `<p>缺少資料：${data.missing.join(', ')}</p>` : ''}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('計算錯誤:', error);
+                content.innerHTML = `
+                    <div class="error">
+                        <strong>發生錯誤：</strong>${error.message}
+                        <p>請確認：</p>
+                        <ul>
+                            <li>已正確登入 SMART on FHIR</li>
+                            <li>FHIR 伺服器正在運行</li>
+                            <li>病人有體重資料（LOINC 29463-7）</li>
+                        </ul>
+                    </div>
+                `;
+            }
+        }
+
+        async function createMedicationRequest(serviceRequestId, patientId, radiopharmCode, radiopharmDisplay, defaultMBq) {
+            const overrideMBqInput = document.getElementById('override-mbq').value.trim();
+            const overrideReason = document.getElementById('override-reason').value;
+            
+            // 驗證輸入是否為有效數字
+            let mbq = defaultMBq;
+            if (overrideMBqInput) {
+                const parsed = parseFloat(overrideMBqInput);
+                if (isNaN(parsed) || parsed <= 0) {
+                    alert('請輸入有效的活度值（必須為大於 0 的數字）');
+                    return;
+                }
+                mbq = parsed;
+            }
+
+            if (!mbq || mbq <= 0) {
+                alert('請輸入有效的活度值');
+                return;
+            }
+
+            try {
+                const response = await fetch('/fhir/MedicationRequest/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        patientId: patientId,
+                        serviceRequestId: serviceRequestId,
+                        recommendedMBq: mbq,
+                        radiopharmCode: radiopharmCode,
+                        radiopharmDisplay: radiopharmDisplay,
+                        note: `Dose per NA Consensus 2024; ruleSet=${document.querySelector('[data-ruleset]')?.dataset.ruleset || 'na-consensus-2024'}`,
+                        overrideReason: overrideReason || null
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.ok) {
+                    alert(`成功建立 MedicationRequest！\nID: ${data.id}`);
+                    location.reload();
+                } else {
+                    alert('建立失敗：' + (data.error || '未知錯誤'));
+                }
+            } catch (error) {
+                alert('發生錯誤：' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
+

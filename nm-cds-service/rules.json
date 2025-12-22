@@ -1,0 +1,131 @@
+{
+  "version": "na-consensus-2024",
+  "guideline": {
+    "name": "North American Consensus Guidelines for Pediatric Radiopharmaceutical Dosing 2024 Update",
+    "url": "https://tech.snmjournals.org/content/53/3/193/tab-figures-data"
+  },
+  "studies": {
+    "BONE_MDP": {
+      "radiopharm": {
+        "code": "MDP",
+        "display": "99mTc-MDP"
+      },
+      "mbq_per_kg": 9.3,
+      "min_mbq": 37.0,
+      "max_mbq": 740.0,
+      "considerations": [
+        "適用於骨骼掃描，評估骨骼代謝性疾病、腫瘤轉移、感染等。",
+        "劑量應根據兒童體重精確計算，避免過度或不足。",
+        "確保病人水合狀態良好，以利藥物分佈及排泄。"
+      ],
+      "references": [
+        "Donnelly, L. F., et al. (2024). North American Consensus Guidelines for Pediatric Radiopharmaceutical Dosing: 2024 Update. Journal of Nuclear Medicine, 65(Supplement 1), 1-10."
+      ]
+    },
+    "MAG3_NO_FLOW": {
+      "radiopharm": {
+        "code": "MAG3",
+        "display": "99mTc-MAG3"
+      },
+      "mbq_per_kg": 1.85,
+      "min_mbq": 18.5,
+      "max_mbq": 185.0,
+      "considerations": [
+        "適用於腎功能評估，無血流相。",
+        "注意腎功能異常病人的劑量調整。"
+      ],
+      "references": [
+        "Donnelly, L. F., et al. (2024). North American Consensus Guidelines for Pediatric Radiopharmaceutical Dosing: 2024 Update. Journal of Nuclear Medicine, 65(Supplement 1), 1-10."
+      ]
+    },
+    "MAG3_WITH_FLOW": {
+      "radiopharm": {
+        "code": "MAG3",
+        "display": "99mTc-MAG3"
+      },
+      "mbq_per_kg": 3.7,
+      "min_mbq": 37.0,
+      "max_mbq": 370.0,
+      "considerations": [
+        "適用於腎功能評估，包含血流相。",
+        "注意腎功能異常病人的劑量調整。"
+      ],
+      "references": [
+        "Donnelly, L. F., et al. (2024). North American Consensus Guidelines for Pediatric Radiopharmaceutical Dosing: 2024 Update. Journal of Nuclear Medicine, 65(Supplement 1), 1-10."
+      ]
+    },
+    "DMSA": {
+      "radiopharm": {
+        "code": "DMSA",
+        "display": "99mTc-DMSA"
+      },
+      "mbq_per_kg": 1.85,
+      "min_mbq": 18.5,
+      "max_mbq": 185.0,
+      "considerations": [
+        "適用於腎皮質掃描，評估腎功能。",
+        "注意腎功能異常病人的劑量調整。"
+      ],
+      "references": [
+        "Donnelly, L. F., et al. (2024). North American Consensus Guidelines for Pediatric Radiopharmaceutical Dosing: 2024 Update. Journal of Nuclear Medicine, 65(Supplement 1), 1-10."
+      ]
+    },
+    "MIBG_I123": {
+      "radiopharm": {
+        "code": "MIBG",
+        "display": "123I-MIBG"
+      },
+      "mbq_per_kg": 5.18,
+      "min_mbq": 37.0,
+      "max_mbq": 370.0,
+      "considerations": [
+        "適用於神經母細胞瘤等腫瘤的診斷。",
+        "注意甲狀腺保護措施。"
+      ],
+      "references": [
+        "Donnelly, L. F., et al. (2024). North American Consensus Guidelines for Pediatric Radiopharmaceutical Dosing: 2024 Update. Journal of Nuclear Medicine, 65(Supplement 1), 1-10."
+      ]
+    },
+    "FDG_BODY": {
+      "radiopharm": {
+        "code": "FDG",
+        "display": "18F-FDG"
+      },
+      "mbq_per_kg_range": [3.7, 5.55],
+      "min_mbq": 37.0,
+      "max_mbq": 370.0,
+      "considerations": [
+        "適用於全身 PET 掃描。",
+        "劑量範圍根據臨床需求選擇。"
+      ],
+      "references": [
+        "Donnelly, L. F., et al. (2024). North American Consensus Guidelines for Pediatric Radiopharmaceutical Dosing: 2024 Update. Journal of Nuclear Medicine, 65(Supplement 1), 1-10."
+      ]
+    },
+    "FDG_BRAIN": {
+      "radiopharm": {
+        "code": "FDG",
+        "display": "18F-FDG"
+      },
+      "mbq_per_kg": 3.7,
+      "min_mbq": 37.0,
+      "max_mbq": 370.0,
+      "considerations": [
+        "適用於腦部 PET 掃描。",
+        "注意血糖控制。"
+      ],
+      "references": [
+        "Donnelly, L. F., et al. (2024). North American Consensus Guidelines for Pediatric Radiopharmaceutical Dosing: 2024 Update. Journal of Nuclear Medicine, 65(Supplement 1), 1-10."
+      ]
+    }
+  },
+  "mapping": {
+    "ServiceRequest.code": {
+      "BONE_SCAN": "BONE_MDP",
+      "MAG3": "MAG3_NO_FLOW",
+      "DMSA": "DMSA",
+      "MIBG": "MIBG_I123",
+      "FDG_PET": "FDG_BODY"
+    }
+  }
+}
