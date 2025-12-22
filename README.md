@@ -33,7 +33,6 @@ cp .env.example .env
 | `HOST` | `localhost` | 主機名稱或 IP 位址 |
 | `LAUNCHER_PORT` | `4000` | SMART Launcher 服務埠號 |
 | `R4_PORT` | `8080` | HAPI FHIR R4 伺服器埠號 |
-| `PATIENT_BROWSER_PORT` | `4001` | Patient Browser 服務埠號（可選） |
 
 **注意：** `.env` 檔案已加入 `.gitignore`，不會被提交到版本控制。如需自訂設定，請修改 `.env` 檔案。
 
